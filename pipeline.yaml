@@ -1,0 +1,333 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'CodePipeline for dbhds-tacts-ui with multi-environment deployment'
+
+Parameters:
+  GitHubConnectionArn:
+    Type: String
+    Description: CodeStar connection ARN for GitHub
+  GitHubRepo:
+    Type: String
+    Default: 'pnjava/dbhds-tacts-ui'
+  GitHubBranch:
+    Type: String
+    Default: 'main'
+  ArtifactBucketName:
+    Type: String
+    Description: S3 bucket for pipeline artifacts
+  DevBucketName:
+    Type: String
+    Description: S3 bucket for Dev environment
+  QABucketName:
+    Type: String
+    Description: S3 bucket for QA environment
+  UATBucketName:
+    Type: String
+    Description: S3 bucket for UAT environment
+  ProdBucketName:
+    Type: String
+    Description: S3 bucket for Production environment
+
+Resources:
+  # IAM Role for CodePipeline
+  CodePipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: PipelinePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:PutObject
+                  - s3:GetBucketVersioning
+                Resource:
+                  - !Sub '${ArtifactBucketName}/*'
+                  - !Sub '${DevBucketName}/*'
+                  - !Sub '${QABucketName}/*'
+                  - !Sub '${UATBucketName}/*'
+                  - !Sub '${ProdBucketName}/*'
+              - Effect: Allow
+                Action:
+                  - codebuild:BatchGetBuilds
+                  - codebuild:StartBuild
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - codestar-connections:UseConnection
+                Resource: !Ref GitHubConnectionArn
+
+  # IAM Role for CodeBuild
+  CodeBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: BuildPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource:
+                  - !Sub '${ArtifactBucketName}/*'
+
+  # Build Project
+  BuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub '${AWS::StackName}-build'
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_MEDIUM
+        Image: aws/codebuild/standard:7.0
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            install:
+              runtime-versions:
+                nodejs: 20
+            pre_build:
+              commands:
+                - npm ci --legacy-peer-deps
+            build:
+              commands:
+                - npm run build
+                - npm run test
+          artifacts:
+            base-directory: dist
+            files:
+              - '**/*'
+
+  # Selenium Test Project
+  SeleniumTestProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub '${AWS::StackName}-selenium'
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_MEDIUM
+        Image: aws/codebuild/standard:7.0
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            install:
+              commands:
+                - apt-get update && apt-get install -y chromium-browser chromium-driver python3-pip
+                - pip3 install selenium
+            pre_build:
+              commands:
+                - python3 -m http.server 8080 -d . &
+                - sleep 5
+            build:
+              commands:
+                - python3 selenium_tests.py
+
+  # Integration Test Project
+  IntegrationTestProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub '${AWS::StackName}-integration'
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_MEDIUM
+        Image: aws/codebuild/standard:7.0
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            install:
+              runtime-versions:
+                nodejs: 20
+            pre_build:
+              commands:
+                - npm ci --legacy-peer-deps
+            build:
+              commands:
+                - npm run test
+
+  # CodePipeline
+  Pipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: !Sub '${AWS::StackName}-pipeline'
+      RoleArn: !GetAtt CodePipelineRole.Arn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactBucketName
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: SourceAction
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeStarSourceConnection
+                Version: '1'
+              Configuration:
+                ConnectionArn: !Ref GitHubConnectionArn
+                FullRepositoryId: !Ref GitHubRepo
+                BranchName: !Ref GitHubBranch
+              OutputArtifacts:
+                - Name: SourceOutput
+
+        - Name: Build
+          Actions:
+            - Name: BuildAction
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref BuildProject
+              InputArtifacts:
+                - Name: SourceOutput
+              OutputArtifacts:
+                - Name: BuildArtifact
+
+        - Name: SeleniumTest
+          Actions:
+            - Name: RunSeleniumTests
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref SeleniumTestProject
+              InputArtifacts:
+                - Name: BuildArtifact
+
+        - Name: IntegrationTest
+          Actions:
+            - Name: RunIntegrationTests
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref IntegrationTestProject
+              InputArtifacts:
+                - Name: SourceOutput
+
+        - Name: DeployDev
+          Actions:
+            - Name: DeployToDev
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: S3
+                Version: '1'
+              Configuration:
+                BucketName: !Ref DevBucketName
+                Extract: 'true'
+              InputArtifacts:
+                - Name: BuildArtifact
+
+        - Name: DeployQA
+          Actions:
+            - Name: DeployToQA
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: S3
+                Version: '1'
+              Configuration:
+                BucketName: !Ref QABucketName
+                Extract: 'true'
+              InputArtifacts:
+                - Name: BuildArtifact
+
+        - Name: ApprovalForUAT
+          Actions:
+            - Name: ManualApproval
+              ActionTypeId:
+                Category: Approval
+                Owner: AWS
+                Provider: Manual
+                Version: '1'
+
+        - Name: DeployUAT
+          Actions:
+            - Name: DeployToUAT
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: S3
+                Version: '1'
+              Configuration:
+                BucketName: !Ref UATBucketName
+                Extract: 'true'
+              InputArtifacts:
+                - Name: BuildArtifact
+
+        - Name: ApprovalForProd
+          Actions:
+            - Name: ManualApproval
+              ActionTypeId:
+                Category: Approval
+                Owner: AWS
+                Provider: Manual
+                Version: '1'
+
+        - Name: DeployProd
+          Actions:
+            - Name: DeployToProd
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: S3
+                Version: '1'
+              Configuration:
+                BucketName: !Ref ProdBucketName
+                Extract: 'true'
+              InputArtifacts:
+                - Name: BuildArtifact
+
+Outputs:
+  PipelineName:
+    Description: Name of the CodePipeline
+    Value: !Ref Pipeline
+  PipelineUrl:
+    Description: URL of the CodePipeline
+    Value: !Sub 'https://console.aws.amazon.com/codesuite/codepipeline/pipelines/${Pipeline}/view'
