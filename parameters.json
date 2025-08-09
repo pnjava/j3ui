@@ -1,0 +1,26 @@
+[
+  {
+    "ParameterKey": "GitHubConnectionArn",
+    "ParameterValue": "arn:aws:codestar-connections:us-east-1:905418042943:connection/6ca88329-8864-476e-8d62-3d094eb4bca9"
+  },
+  {
+    "ParameterKey": "ArtifactBucketName",
+    "ParameterValue": "dbhds-tacts-ui-artifacts-905418042943"
+  },
+  {
+    "ParameterKey": "DevBucketName",
+    "ParameterValue": "dbhds-tacts-ui-dev-905418042943"
+  },
+  {
+    "ParameterKey": "QABucketName",
+    "ParameterValue": "dbhds-tacts-ui-qa-905418042943"
+  },
+  {
+    "ParameterKey": "UATBucketName",
+    "ParameterValue": "dbhds-tacts-ui-uat-905418042943"
+  },
+  {
+    "ParameterKey": "ProdBucketName",
+    "ParameterValue": "dbhds-tacts-ui-prod-905418042943"
+  }
+]
