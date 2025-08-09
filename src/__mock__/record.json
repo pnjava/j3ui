@@ -1,0 +1,91 @@
+{
+  "id": "12345",
+  "mrn": "67890",
+  "csb_id": "CSB001",
+  "individual_id": "IND123",
+  "facility_id": "FAC456",
+  "clients_legal_status": "Active",
+  "requestor_name": "John Doe",
+  "date_of_request": "2023-10-01",
+  "plan_start_date": "2023-11-01",
+  "type_of_funds": "Ongoing",
+  "dc_readiness_level": "High",
+  "description": "This is a sample description for the DAP record.",
+  "patient_resources": {
+    "benefits_responsible_person": "Jane Smith",
+    "is_auxiliary_grant_eligible": true,
+    "is_id_dd": false,
+    "waiver_status_id": "WS123",
+    "insurance_type": "Medicaid",
+    "income": 50000,
+    "other_income": 10000
+  },
+  "discharge_barriers": {
+    "dap_alternatives_attempted": "Alternative 1",
+    "other_outstanding_clinical_needs": "Need 1, Need 2",
+    "dap_release_plan": "Release plan details",
+    "residential_provider": "Provider 1",
+    "memory_care": {
+      "is_memory_care_placement": true,
+      "has_approval_by_dbhds_community_transition_specialist": true,
+      "dbhds_date_of_approval": "2023-09-15"
+    }
+  },
+  "is_plan_modification": false,
+  "original_plan_amount": 100000,
+  "requested_amount": 120000,
+  "out_of_catchment": {
+    "is_out_of_catchment_plan": false,
+    "out_of_catchment_referral_completed": true,
+    "receiving_csb_dap_coordinator_consulted": true,
+    "csb_dap_coordinator_full_name": "Coordinator Name",
+    "consultation_date": "2023-08-01",
+    "no_consultation_reason": "N/A"
+  },
+  "admission_date": "2023-07-01",
+  "hospital_admit_date": "2023-07-10",
+  "hospital_discharge_date": "2023-07-20",
+  "discharge_readiness_date": "2023-08-01",
+  "scheduled_discharge_date": "2023-08-15",
+  "transfer_due_date": "2023-09-01",
+  "residential_care_needed": "Care Type 1",
+  "elopement_risk": "Low",
+  "ambulation_equipment": "Wheelchair",
+  "exit_seeking_behaviors": "Behavior 1, Behavior 2",
+  "cognitive_function": "Normal",
+  "monitoring_device": "Device Type 1",
+  "diagnosis": "Diagnosis details",
+  "mobility_level": "High",
+  "major_neurocognitive_disorder": false,
+  "clinical_needs": "Need 1, Need 2",
+  "regional_office_intake": {
+    "approved": true,
+    "date_received": "2023-06-01",
+    "date_approved": "2023-06-15",
+    "amount_needed_this_fiscal_year": 50000
+  },
+  "deleted": {
+    "status": false,
+    "action": {
+      "taken_on_date": "N/A",
+      "taken_by_user": {
+        "id": "USER001",
+        "full_name": "Admin User"
+      }
+    }
+  },
+  "created": {
+    "timestamp": "2023-05-01T12:00:00Z",
+    "user": {
+      "id": "USER001",
+      "full_name": "Admin User"
+    }
+  },
+  "updated": {
+    "timestamp": "2023-09-01T12:00:00Z",
+    "user": {
+      "id": "USER002",
+      "full_name": "Editor User"
+    }
+  }
+}

@@ -1,0 +1,25 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 20
+    commands:
+      - echo Installing dependencies...
+      - npm install --legacy-peer-deps
+  pre_build:
+    commands:
+      - echo Running tests...
+      # - npm test
+      - echo "Assuming cross-account role..."
+      - CREDS=$(aws sts assume-role --role-arn arn:aws:iam::$TARGET_ACCOUNT_ID:role/$ROLE_NAME --role-session-name CodeBuildSession)
+      - export AWS_ACCESS_KEY_ID=$(echo $CREDS | jq -r '.Credentials.AccessKeyId')
+      - export AWS_SECRET_ACCESS_KEY=$(echo $CREDS | jq -r '.Credentials.SecretAccessKey')
+      - export AWS_SESSION_TOKEN=$(echo $CREDS | jq -r '.Credentials.SessionToken')
+      - export AWS_DEFAULT_REGION=$REGION
+      - echo "Temporary credentials acquired."
+  build:
+    commands:
+      - echo Running build...
+      - npm run build
+

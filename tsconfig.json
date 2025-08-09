@@ -1,0 +1,20 @@
+{
+  "extends": "ts-config-single-spa",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "declarationDir": "dist",
+    "target": "ES2018",
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "files": ["src/dbhds-tacts.tsx"],
+  "include": ["src/**/*", "src/@types/*"],
+  "exclude": ["src/**/*.test*"],
+  "references": [
+    // { "path": "./tsconfig.app.json" },
+    // { "path": "./tsconfig.node.json" }
+  ]
+}
