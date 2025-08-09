@@ -52,11 +52,11 @@ Resources:
                   - s3:PutObject
                   - s3:GetBucketVersioning
                 Resource:
-                  - !Sub '${ArtifactBucketName}/*'
-                  - !Sub '${DevBucketName}/*'
-                  - !Sub '${QABucketName}/*'
-                  - !Sub '${UATBucketName}/*'
-                  - !Sub '${ProdBucketName}/*'
+                  - !Sub 'arn:aws:s3:::${ArtifactBucketName}/*'
+                  - !Sub 'arn:aws:s3:::${DevBucketName}/*'
+                  - !Sub 'arn:aws:s3:::${QABucketName}/*'
+                  - !Sub 'arn:aws:s3:::${UATBucketName}/*'
+                  - !Sub 'arn:aws:s3:::${ProdBucketName}/*'
               - Effect: Allow
                 Action:
                   - codebuild:BatchGetBuilds
@@ -94,7 +94,7 @@ Resources:
                   - s3:GetObject
                   - s3:PutObject
                 Resource:
-                  - !Sub '${ArtifactBucketName}/*'
+                  - !Sub 'arn:aws:s3:::${ArtifactBucketName}/*'
 
   # Build Project
   BuildProject:
