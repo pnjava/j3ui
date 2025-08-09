@@ -264,6 +264,15 @@ Resources:
               InputArtifacts:
                 - Name: BuildArtifact
 
+        - Name: ApprovalForQA
+          Actions:
+            - Name: ManualApproval
+              ActionTypeId:
+                Category: Approval
+                Owner: AWS
+                Provider: Manual
+                Version: '1'
+
         - Name: DeployQA
           Actions:
             - Name: DeployToQA
